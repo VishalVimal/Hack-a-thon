@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
@@ -6,8 +6,11 @@ import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import JobListings from './pages/JobListings'
+import JobDetails from './pages/JobDetails'
 import ApplicationForm from './pages/ApplicationForm'
+import ApplicationManagement from './pages/ApplicationManagement'
 import JobPost from './pages/JobPost'
+import ResumeAnalysisResults from './pages/ResumeAnalysisResults'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -40,10 +43,13 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/jobs" element={<JobListings session={session} />} />
+          <Route path="/jobs/:jobId" element={<JobDetails session={session} />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={<Dashboard session={session} />} />
+          <Route path="/resume-results" element={<ResumeAnalysisResults session={session} />} />
           <Route path="/apply/:jobId" element={<ApplicationForm session={session} />} />
+          <Route path="/jobs/:jobId/applications" element={<ApplicationManagement session={session} />} />
           <Route path="/post-job" element={<JobPost session={session} />} />
         </Routes>
       </div>

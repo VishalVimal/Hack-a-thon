@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
+import { API_ENDPOINTS } from '../config'
 import { Building, FileText, Plus } from 'lucide-react'
 
 import RecruiterDashboard from './RecruiterDashboard'
+import ProfileRepair from '../components/ProfileRepair'
 
 export default function Dashboard({ session }) {
     const navigate = useNavigate()
@@ -91,13 +93,8 @@ export default function Dashboard({ session }) {
 
     if (loading) return <div className="container" style={{ marginTop: '2rem' }}>Loading Dashboard...</div>
 
-    // Debugging UI for development if profile is missing
-    if (!profile) return (
-        <div className="container" style={{ marginTop: '2rem' }}>
-            <p>Error loading profile. Please refresh or try logging in again.</p>
-            <button class="btn btn-primary" onClick={() => window.location.reload()}>Retry</button>
-        </div>
-    )
+    // Show profile repair component if profile is missing
+    if (!profile) return <ProfileRepair session={session} onProfileCreated={setProfile} />
 
     return (
         <div className="container" style={{ marginTop: '2rem' }}>
@@ -143,44 +140,66 @@ export default function Dashboard({ session }) {
                                             const file = e.target.files[0]
                                             if (!file) return
 
-                                            // 1. Analyze Resume
-                                            const formData = new FormData()
-                                            formData.append('file', file)
+                                            const loadingMsg = document.createElement('div')
+                                            loadingMsg.textContent = '⏳ Analyzing resume...'
+                                            loadingMsg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #3B82F6; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'
+                                            document.body.appendChild(loadingMsg)
 
                                             try {
-                                                const res = await fetch('http://localhost:8000/parse-resume', {
+                                                // 1. Analyze Resume
+                                                const formData = new FormData()
+                                                formData.append('file', file)
+
+                                                const res = await fetch(API_ENDPOINTS.parseResume, {
                                                     method: 'POST',
                                                     body: formData
                                                 })
+
+                                                if (!res.ok) {
+                                                    const errorData = await res.json()
+                                                    throw new Error(errorData.detail || 'Failed to parse resume')
+                                                }
+
                                                 const data = await res.json()
 
-                                                if (data.skills) {
-                                                    alert(`Resume Parsed! Found ${data.skills.length} skills: ${data.skills.slice(0, 5).join(', ')}...`)
+                                                // 2. Get Recommendations
+                                                const { data: allJobs } = await supabase.from('jobs').select('*')
+                                                let recommendations = []
 
-                                                    // 2. Get Recommendations
-                                                    const { data: allJobs } = await supabase.from('jobs').select('*')
-
-                                                    const recRes = await fetch('http://localhost:8000/recommend', {
+                                                if (allJobs && allJobs.length > 0) {
+                                                    const recRes = await fetch(API_ENDPOINTS.recommend, {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json' },
                                                         body: JSON.stringify({
                                                             resume_text: data.full_text,
-                                                            jobs: allJobs || []
+                                                            jobs: allJobs
                                                         })
                                                     })
-                                                    const recData = await recRes.json()
 
-                                                    if (recData.recommendations?.length > 0) {
-                                                        const jobsString = recData.recommendations.map(j => `\n- ${j.title} (${j.score}%)`).join('')
-                                                        alert(`Top Recommendations:${jobsString}`)
-                                                    } else {
-                                                        alert('No strong matches found yet.')
+                                                    if (recRes.ok) {
+                                                        const recData = await recRes.json()
+                                                        recommendations = recData.recommendations || []
                                                     }
                                                 }
 
+                                                // Navigate to results page with data
+                                                navigate('/resume-results', {
+                                                    state: {
+                                                        analysisData: data,
+                                                        recommendations: recommendations
+                                                    }
+                                                })
+
                                             } catch (err) {
-                                                console.error(err)
-                                                alert('Error: Check if backend is running (localhost:8000)')
+                                                console.error('Resume analysis error:', err)
+                                                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                                                    alert('❌ Error: Backend server is not running.\n\nPlease start the backend:\n1. cd backend\n2. pip install -r requirements.txt\n3. python main.py')
+                                                } else {
+                                                    alert(`❌ Error: ${err.message}`)
+                                                }
+                                            } finally {
+                                                document.body.removeChild(loadingMsg)
+                                                e.target.value = '' // Reset file input
                                             }
                                         }}
                                         style={{ width: '100%' }}
