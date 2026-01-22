@@ -1,8 +1,8 @@
 # 🚀 AI-Powered Recruitment Platform
 ## Team Members
--Vishal R
--Abishek D
--Yokesh V P
+- Vishal R
+- Abishek D
+- Yokesh V P
 
 A modern, full-stack recruitment platform built with React, FastAPI, and Supabase. Features AI-powered resume matching, real-time applications, and comprehensive recruiter tools.
 
