@@ -5,7 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('https://kicwpjkpfsctqfkstsfo.supabase.co')
+    console.warn('https://lixbzbmgkxnbqkuwtdje.supabase.co')
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { Building, FileText, Plus } from 'lucide-react'
 
+import RecruiterDashboard from './RecruiterDashboard'
+
 export default function Dashboard({ session }) {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
@@ -10,7 +12,6 @@ export default function Dashboard({ session }) {
 
     // Data for views
     const [applications, setApplications] = useState([])
-    const [recruiterJobs, setRecruiterJobs] = useState([])
 
     useEffect(() => {
         if (!session) {
@@ -73,14 +74,7 @@ export default function Dashboard({ session }) {
             setProfile(userProfile)
 
             // 2. Load Data based on Role
-            if (userProfile.role === 'recruiter') {
-                console.log('Loading Recruiter Data...')
-                const { data: jobs } = await supabase
-                    .from('jobs')
-                    .select('*')
-                    .eq('recruiter_id', session.user.id)
-                setRecruiterJobs(jobs || [])
-            } else {
+            if (userProfile.role !== 'recruiter') {
                 console.log('Loading Candidate Data...')
                 const { data: apps } = await supabase
                     .from('applications')
@@ -127,15 +121,7 @@ export default function Dashboard({ session }) {
                         </span>
                     </div>
                 </div>
-                {profile?.role === 'recruiter' && (
-                    <button
-                        onClick={() => navigate('/post-job')}
-                        className="btn btn-primary"
-                        style={{ gap: '0.5rem' }}
-                    >
-                        <Plus size={18} /> Post New Job
-                    </button>
-                )}
+
             </header>
 
             {profile?.role !== 'recruiter' ? (
@@ -246,30 +232,7 @@ export default function Dashboard({ session }) {
                     </section>
                 </>
             ) : (
-                <section>
-                    <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Building size={20} /> My Posted Jobs
-                    </h2>
-                    {recruiterJobs.length === 0 ? (
-                        <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            <p>You haven't posted any jobs yet.</p>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gap: '1rem' }}>
-                            {recruiterJobs.map(job => (
-                                <div key={job.id} className="card">
-                                    <h3 style={{ fontWeight: '600' }}>{job.title}</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                                        Posted on {new Date(job.created_at).toLocaleDateString()}
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button className="btn" style={{ fontSize: '0.875rem', border: '1px solid var(--border)' }}>View Applications</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </section>
+                <RecruiterDashboard session={session} profile={profile} />
             )}
         </div>
     )
